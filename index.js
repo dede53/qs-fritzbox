@@ -2,10 +2,10 @@ var fritz 						= require('smartfritz');
 var adapter 					= require('../../adapter-lib.js');
 var CallMonitor					= require('./callmonitor.js');
 var avm_fritz					= new adapter({
-	"name": "qs-fritzbox",
+	"name": "fritzbox",
 	"loglevel": 1,
 	"description": "Sammelt Informationen von der Fritzbox.",
-	"settingsFile": "qs-fritzbox.json"
+	"settingsFile": "fritzbox.json"
 });
 
 process.on('message', function(data) {
