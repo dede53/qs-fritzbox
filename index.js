@@ -61,7 +61,7 @@ function getPhonelist(){
 					listinfos[i].date = mdyToDate(listinfos[i].date + "." + listinfos[i].time);
 					call.push(listinfos[i]);
 				}
-				avm_fritz.setVariable('avmfritz.phonelist', call);
+				avm_fritz.setVariable('fritzbox.phonelist', call);
 				// callback(call);
 			}
 		});
@@ -72,26 +72,26 @@ var monitor = new CallMonitor(avm_fritz.settings.ip, avm_fritz.settings.port);
 
 monitor.on('inbound', function (call) {
 	avm_fritz.log.debug("klingelt:" + call.caller);
-	avm_fritz.setVariable("avmfritz.lastCaller", call.caller);
-	avm_fritz.setVariable("avmfritz.status", "klingelt");
+	avm_fritz.setVariable("fritzbox.lastCaller", call.caller);
+	avm_fritz.setVariable("fritzbox.status", "klingelt");
 	getPhonelist();
 });
 
 monitor.on('outbound', function (call) {
 	avm_fritz.log.debug("ausgehend");
-	avm_fritz.setVariable("avmfritz.status", "ausgehend");
+	avm_fritz.setVariable("fritzbox.status", "ausgehend");
 	getPhonelist();
 });
 
 monitor.on('connected', function (call) {
 	avm_fritz.log.debug("eingehend");
-	avm_fritz.setVariable("avmfritz.status", "angenommen");
+	avm_fritz.setVariable("fritzbox.status", "angenommen");
 	getPhonelist();
 });
 
 monitor.on('disconnected', function (call) {
 	avm_fritz.log.debug("aufgelegt");
-	avm_fritz.setVariable("avmfritz.status", "aufgelegt");
+	avm_fritz.setVariable("fritzbox.status", "aufgelegt");
 	getPhonelist();
 });
 
