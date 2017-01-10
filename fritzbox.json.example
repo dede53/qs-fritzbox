@@ -3,4 +3,5 @@
 	"user": "username",
 	"password": "123456abcdef",
 	"phonelistLength": 10
+	"loglevel":1
 }
