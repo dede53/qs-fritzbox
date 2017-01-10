@@ -25,8 +25,14 @@ var CallMonitor = function (host, port) {
 		message[0] = fritzboxDateToUnix(message[0]);
 		return message;
 	}
-
-	var client = net.createConnection(port, host);
+	var options = {
+		port: port,
+		host: host
+	}
+	var client = net.createConnection(options, function(data){
+		process.send({"statusMessage":"Verbindung aufgebaut"});
+	});
+	
 	client.addListener('data', function (chunk) {
 		var data = parseMessage(chunk);
 		if (data[1] === 'ring') {
@@ -90,9 +96,11 @@ var CallMonitor = function (host, port) {
 
 	client.addListener('error', function (err) {
 		if(err.code = 'ECONNREFUSED'){
-			helper.log.error('Die fritzbox ('+ err.address +':'+err.port+') kann nicht erreicht werden!');
-			helper.log.error('Ist der CallMonitor aktiv?');
-			helper.log.error('Zum Aktivieren #96*5* anrufen');
+
+			process.send({"statusMessage":"error:" + error});
+			console.log('Die fritzbox ('+ err.address +':'+err.port+') kann nicht erreicht werden!');
+			console.log('Ist der CallMonitor aktiv?');
+			console.log('Zum Aktivieren #96*5* anrufen');
 		}else{
 			console.log(err);
 		}
