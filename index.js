@@ -1,18 +1,38 @@
 var fritz 						= require('smartfritz');
 var adapter 					= require('../../adapter-lib.js');
-var CallMonitor					= require('./callmonitor.js');
-var avm_fritz					= new adapter({
-	"name": "fritzbox",
-	"loglevel": 1,
-	"description": "Sammelt Informationen von der Fritzbox.",
-	"settingsFile": "fritzbox.json"
-});
+var avm_fritz					= new adapter("fritzbox");
 
 process.on('message', function(data) {
 	var status = data.status;
 	var data = data.data;
+	if(data.protocol.includes(":")){
+		data.protocol = data.protocol.split(":");
+	}else{
+		data.protocol = [data.protocol];
+	}
+	switch(data.protocol[1]){
+		case "switchDect":
+			fritzdect(status, data);
+			break;
+		case "setGuestWlan":
+			setGuestWlan(status);
+			break;
+	};
+	var status = data.status;
+	var data = data.data;
 	fritzdect(status, data);
 });
+
+function setGuestWlan(status){
+	if(status == 1){
+		var status = true;
+	}else{
+		var status = false;
+	}
+	fritz.setGuestWLan(sid, status, function(enabled){
+    	avm_fritz.log.debug("Guest WLan: " + enabled);
+	});
+}
 
 function fritzdect(status, data){
 	fritzboxConnect(function(sid){
@@ -67,7 +87,7 @@ function getPhonelist(){
 		});
 	});
 }
-
+var CallMonitor					= require('./callmonitor.js');
 var monitor = new CallMonitor(avm_fritz.settings.ip, avm_fritz.settings.port);
 
 monitor.on('inbound', function (call) {
