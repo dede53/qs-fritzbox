@@ -2,6 +2,7 @@
 	"ip": "fritz.box",
 	"user": "username",
 	"password": "123456abcdef",
-	"phonelistLength": 10
-	"loglevel":1
+	"phonelistLength": 10,
+	"loglevel":1,
+	"version":"0.0.1"
 }
