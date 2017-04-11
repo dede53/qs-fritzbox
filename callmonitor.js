@@ -95,16 +95,7 @@ var CallMonitor = function (host, port) {
 	});
 
 	client.addListener('error', function (err) {
-		if(err.code = 'ECONNREFUSED'){
-
-			process.send({"statusMessage":"error:" + error});
-			console.log('Die fritzbox ('+ err.address +':'+err.port+') kann nicht erreicht werden!');
-			console.log('Ist der CallMonitor aktiv?');
-			console.log('Zum Aktivieren #96*5* anrufen');
-		}else{
-			console.log(err);
-		}
-			
+		self.emit('error', err);
 	});
 };
 

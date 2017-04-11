@@ -1,16 +1,16 @@
-var fritz 						= require('smartfritz');
+var fritz 						= require('fritzapi');
 var adapter 					= require('../../adapter-lib.js');
 var avm_fritz					= new adapter("fritzbox");
+if(avm_fritz.settings.ip){
+	var fritte						= new fritz.Fritz(avm_fritz.settings.user, avm_fritz.settings.password, avm_fritz.settings.ip);
+}else{
+	var fritte						= new fritz.Fritz(avm_fritz.settings.user, avm_fritz.settings.password);
+}
 
-process.on('message', function(data) {
-	var status = data.status;
-	var data = data.data;
-	if(data.protocol.includes(":")){
-		data.protocol = data.protocol.split(":");
-	}else{
-		data.protocol = [data.protocol];
-	}
-	switch(data.protocol[1]){
+process.on('message', function(request) {
+	var status = request.status;
+	var data = request.data;
+	switch(data.protocol){
 		case "switchDect":
 			fritzdect(status, data);
 			break;
@@ -18,9 +18,6 @@ process.on('message', function(data) {
 			setGuestWlan(status);
 			break;
 	};
-	var status = data.status;
-	var data = data.data;
-	fritzdect(status, data);
 });
 
 function setGuestWlan(status){
@@ -29,90 +26,58 @@ function setGuestWlan(status){
 	}else{
 		var status = false;
 	}
-	fritz.setGuestWLan(sid, status, function(enabled){
-    	avm_fritz.log.debug("Guest WLan: " + enabled);
+	fritte.setGuestWlan(status).then(function(enabled){
+		avm_fritz.log.debug("Gast-WLAN aktiv: " + enabled.activate_guest_access);
+		avm_fritz.log.pure(enabled);
 	});
 }
 
 function fritzdect(status, data){
-	fritzboxConnect(function(sid){
-		if(status == 1){
-			fritz.setSwitchOn(sid, data.CodeOn, function(sid){
-				avm_fritz.log.debug("Erfolgreich eingeschaltet");
-			});
-		}else{
-			fritz.setSwitchOff(sid, data.CodeOn, function(sid){
-				avm_fritz.log.debug("Erfolgreich ausgeschaltet");
-			});
-		}
-	});
-}
-
-function fritzboxConnect(callback){
-	var moreParam = { url: avm_fritz.settings.ip };
-	fritz.getSessionID(avm_fritz.settings.user, avm_fritz.settings.password, function(sid){
-		console.log("Fritzbox Session ID: " + sid);
-		if(sid == "0000000000000000"){
-			console.log("Kann keine Verbindung zur Fritzbox herstellen!");
-		}else{
-			callback(sid);
-		}
-	}, moreParam);
-}
-
-function getPhonelist(){
-	fritzboxConnect(function(sid){
-		fritz.getPhoneList(sid,function(listinfos){
-			if(listinfos.length != 0){
-				if(listinfos.length < avm_fritz.settings.phonelistLength){
-					var items = listinfos.length;
-				}else{
-					var items = avm_fritz.settings.phonelistLength;
-				}
-				var call = new Array;
-				for(var i = 0; i< items; i++){
-					var duration = listinfos[i].duration.split(":", 2);
-					if(duration[0] == 0){
-						listinfos[i].duration = undefined; 
-					}else{
-						listinfos[i].duration = duration[0];
-					}
-					listinfos[i].durationminutes = duration[1];
-					listinfos[i].date = mdyToDate(listinfos[i].date + "." + listinfos[i].time);
-					call.push(listinfos[i]);
-				}
-				avm_fritz.setVariable('fritzbox.phonelist', call);
-				// callback(call);
-			}
+	if(status == 1){
+		fritte.setSwitchOn(data.CodeOn).then(function(){
+			avm_fritz.log.debug("Erfolgreich eingeschaltet");
 		});
-	});
+	}else{
+		fritz.setSwitchOff(data.CodeOn).then(function(sid){
+			avm_fritz.log.debug("Erfolgreich ausgeschaltet");
+		});
+	}
 }
+
 var CallMonitor					= require('./callmonitor.js');
-var monitor = new CallMonitor(avm_fritz.settings.ip, avm_fritz.settings.port);
+var monitor = new CallMonitor(avm_fritz.settings.ip || 'fritz.box', avm_fritz.settings.port);
 
 monitor.on('inbound', function (call) {
 	avm_fritz.log.debug("klingelt:" + call.caller);
-	avm_fritz.setVariable("fritzbox.lastCaller", call.caller);
 	avm_fritz.setVariable("fritzbox.status", "klingelt");
-	getPhonelist();
+	avm_fritz.setVariable("fritzbox.lastCaller", call.caller);
+	avm_fritz.setVariable("fritzbox.lastCall", new Date());
 });
 
 monitor.on('outbound', function (call) {
 	avm_fritz.log.debug("ausgehend");
 	avm_fritz.setVariable("fritzbox.status", "ausgehend");
-	getPhonelist();
 });
 
 monitor.on('connected', function (call) {
 	avm_fritz.log.debug("eingehend");
 	avm_fritz.setVariable("fritzbox.status", "angenommen");
-	getPhonelist();
 });
 
 monitor.on('disconnected', function (call) {
 	avm_fritz.log.debug("aufgelegt");
 	avm_fritz.setVariable("fritzbox.status", "aufgelegt");
-	getPhonelist();
+});
+
+monitor.on('error', function(err){
+	if(err.code = 'ECONNREFUSED'){
+		process.send({"statusMessage":"error:" + err});
+		avm_fritz.log.error('Die fritzbox ('+ err.address +':'+err.port+') kann nicht erreicht werden!');
+		avm_fritz.log.error('Ist der CallMonitor aktiv?');
+		avm_fritz.log.error('Zum Aktivieren #96*5* anrufen');
+	}else{
+		avm_fritz.log.error(err);
+	}
 });
 
 function mdyToDate(mdy) {
