@@ -51,21 +51,22 @@ monitor.on('inbound', function (call) {
 	avm_fritz.log.debug("klingelt:" + call.caller);
 	avm_fritz.setVariable("fritzbox.status", "klingelt");
 	avm_fritz.setVariable("fritzbox.lastCaller", call.caller);
+	avm_fritz.setVariable("fritzbox.lastCalled", call.called);
 	avm_fritz.setVariable("fritzbox.lastCall", new Date());
 });
 
 monitor.on('outbound', function (call) {
-	avm_fritz.log.debug("ausgehend");
+	avm_fritz.log.debug("ausgehend " + call.caller);
 	avm_fritz.setVariable("fritzbox.status", "ausgehend");
 });
 
 monitor.on('connected', function (call) {
-	avm_fritz.log.debug("eingehend");
+	avm_fritz.log.debug("eingehend " + call.caller);
 	avm_fritz.setVariable("fritzbox.status", "angenommen");
 });
 
 monitor.on('disconnected', function (call) {
-	avm_fritz.log.debug("aufgelegt");
+	avm_fritz.log.debug("aufgelegt " + call);
 	avm_fritz.setVariable("fritzbox.status", "aufgelegt");
 });
 
