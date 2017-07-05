@@ -23,6 +23,7 @@ var CallMonitor = function (host, port) {
 									.replace(/;$/, '')
 									.split(';');
 		message[0] = fritzboxDateToUnix(message[0]);
+		console.log(message);
 		return message;
 	}
 	var options = {
@@ -36,12 +37,15 @@ var CallMonitor = function (host, port) {
 	client.addListener('data', function (chunk) {
 		var data = parseMessage(chunk);
 		if (data[1] === 'ring') {
-			self.call[data[2]] = {
-				type: 'inbound',
-				start: data[0],
-				caller: data[3],
-				called: data[4]
-			};
+			if(data[3] == ""){
+				data[3] = "Unbekannt";
+			}
+			// self.call[data[2]] = {
+			// 	type: 'inbound',
+			// 	start: data[0],
+			// 	caller: data[3],
+			// 	called: data[4]
+			// };
 			self.emit('inbound', {
 				time: data[0],
 				caller: data[3],
@@ -51,13 +55,13 @@ var CallMonitor = function (host, port) {
 		}
 
 		if (data[1] === 'call') {
-			self.call[data[2]] = {
-				type: 'outbound',
-				start: data[0],
-				extension: data[3],
-				caller: data[4],
-				called: data[5]
-			};
+			// self.call[data[2]] = {
+			// 	type: 'outbound',
+			// 	start: data[0],
+			// 	extension: data[3],
+			// 	caller: data[4],
+			// 	called: data[5]
+			// };
 			self.emit('outbound', {
 				time: data[0],
 				extension: data[3],
@@ -68,7 +72,7 @@ var CallMonitor = function (host, port) {
 		}
 
 		if (data[1] === 'connect') {
-			self.call[data[2]]['connect'] = data[0];
+			// self.call[data[2]]['connect'] = data[0];
 			self.emit('connected', {
 				time: data[0],
 				extension: self.call[data[2]]['extension'],
@@ -79,15 +83,17 @@ var CallMonitor = function (host, port) {
 		}
 
 		if (data[1] === 'disconnect') {
-			self.call[data[2]].disconnect = data[0];
-			self.call[data[2]].duration   = parseInt(data[3], 10);
+			// self.call[data[2]]['disconnect'] = data[0];
+			// self.call[data[2]]['duration']   = parseInt(data[3], 10);
 
-			var call = self.call[data[2]];
-			delete(self.call[data[2]]);
-			self.emit('disconnected', call);
+			// var call = self.call[data[2]];
+			// delete(self.call[data[2]]);
+			self.emit('disconnected', {
+				"disconnect": data[0],
+				"duration": parseInt(data[3], 10)
+			});
 			return;
 		}
-
 	});
 
 	client.addListener('end', function () {
